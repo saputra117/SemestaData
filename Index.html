@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog & Performa Penjualan — SEMESTADATA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#f8fafc] text-slate-800 font-sans antialiased">
+
+    <!-- Notifikasi Sederhana -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- 1. Top Navigation Bar Putih Sederhana -->
+    <header class="bg-white border-b border-[#e2e8f0] sticky top-0 z-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+                <a href="#" class="text-base sm:text-lg font-semibold text-slate-900 tracking-tight truncate">
+                    SEMESTADATA
+                </a>
+                <span class="hidden sm:inline text-slate-300">/</span>
+                <span class="hidden sm:inline text-sm text-slate-500 truncate">
+                    Makassar &middot; UMK Aktif
+                </span>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <a href="https://katalog.inaproc.id/semestadata" target="_blank" rel="noopener noreferrer"
+                   class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-[#e2e8f0] transition-colors">
+                    Katalog INAPROC
+                </a>
+                <button id="btn-export-csv" type="button"
+                        class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 transition-colors cursor-pointer">
+                    Unduh CSV (<span id="export-count">133</span>)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Konten Utama -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+        <!-- 2. Ringkasan Singkat (4 Kartu Angka Bersih + Catatan Profil & Cara Hitung) -->
+        <section aria-label="Ringkasan Katalog dan Penjualan" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Kartu 1: Total Produk -->
+                <div class="bg-white rounded-xl border border-[#e2e8f0] p-4 sm:p-5">
+                    <p class="text-xs font-medium text-slate-500">Total Produk</p>
+                    <p id="kpi-total-produk" class="mt-1.5 text-2xl font-semibold text-slate-900 tabular-nums">133</p>
+                    <p id="kpi-sub-kategori" class="mt-1 text-xs text-slate-500">ATK 67 &middot; Elektronik 52 &middot; Jasa 14</p>
+                </div>
+
+                <!-- Kartu 2: Unit Terjual -->
+                <div class="bg-white rounded-xl border border-[#e2e8f0] p-4 sm:p-5">
+                    <p class="text-xs font-medium text-slate-500">Unit Terjual</p>
+                    <p id="kpi-total-unit" class="mt-1.5 text-2xl font-semibold text-slate-900 tabular-nums">1.237</p>
+                    <p id="kpi-sub-laku" class="mt-1 text-xs text-slate-500">Dari 68 produk terjual (51,1%)</p>
+                </div>
+
+                <!-- Kartu 3: Perkiraan Nilai Terjual -->
+                <div class="bg-white rounded-xl border border-[#e2e8f0] p-4 sm:p-5">
+                    <p class="text-xs font-medium text-slate-500">Perkiraan Nilai Terjual</p>
+                    <p id="kpi-total-nilai" class="mt-1.5 text-xl sm:text-2xl font-semibold text-slate-900 tabular-nums truncate">Rp 209.095.391</p>
+                    <p id="kpi-sub-asal" class="mt-1 text-xs text-slate-500">PDN Rp 154,7 jt &middot; Import Rp 54,4 jt</p>
+                </div>
+
+                <!-- Kartu 4: Stok Habis -->
+                <div class="bg-white rounded-xl border border-[#e2e8f0] p-4 sm:p-5">
+                    <p class="text-xs font-medium text-slate-500">Stok Habis</p>
+                    <p id="kpi-stok-habis" class="mt-1.5 text-2xl font-semibold text-slate-900 tabular-nums">2</p>
+                    <p id="kpi-sub-stok" class="mt-1 text-xs text-slate-500 truncate" title="TISSUE CLEAN PLUS 1KG, Kingco Paper Clip No.3">131 item tersedia</p>
+                </div>
+            </div>
+
+            <!-- Catatan Profil Toko & Cara Perhitungan Nilai Terjual -->
+            <div class="bg-white rounded-xl border border-[#e2e8f0] px-4 py-3 text-xs text-slate-600 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <p>
+                    <span class="font-medium text-slate-800">Profil Penyedia:</span>
+                    SEMESTADATA (Commanditer Venoschaap / CV), penyedia UMK Aktif berlokasi di Kota Makassar, Sulawesi Selatan (Kode Pos 90992).
+                </p>
+                <p class="text-slate-500 shrink-0">
+                    <span class="font-medium text-slate-700">Perhitungan nilai:</span>
+                    Harga satuan &times; jumlah unit terjual (otomatis menyesuaikan filter).
+                </p>
+            </div>
+        </section>
+
+        <!-- 3. Dua Grafik Berdampingan -->
+        <section aria-label="Grafik Penjualan" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Grafik Kiri: Penjualan per Kategori -->
+            <div class="bg-white rounded-xl border border-[#e2e8f0] p-4 sm:p-5">
+                <div class="flex items-start justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-sm sm:text-base font-semibold text-slate-900">Penjualan per Kategori</h2>
+                        <p class="text-xs text-slate-500">Perkiraan nilai terjual berdasarkan kategori produk</p>
+                    </div>
+                    <span class="text-xs text-slate-400">ATK &middot; Elektronik &middot; Jasa</span>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="chartKategori"></canvas>
+                </div>
+            </div>
+
+            <!-- Grafik Kanan: Produk Terlaris (Top 8 Berdasarkan Nilai Terjual) -->
+            <div class="bg-white rounded-xl border border-[#e2e8f0] p-4 sm:p-5">
+                <div class="flex items-start justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-sm sm:text-base font-semibold text-slate-900">Produk Terlaris (Top 8)</h2>
+                        <p class="text-xs text-slate-500">Diurutkan berdasarkan perkiraan nilai terjual tertinggi</p>
+                    </div>
+                    <span class="text-xs text-slate-400">Nilai (Rp)</span>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="chartTop8"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Daftar Produk dalam Bentuk Tabel -->
+        <section aria-label="Daftar Produk" class="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden">
+            <!-- Baris Pencarian & Filter -->
+            <div class="p-4 sm:p-5 border-b border-[#e2e8f0] space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-sm sm:text-base font-semibold text-slate-900">Daftar Produk Katalog</h2>
+                        <p id="table-summary-text" class="text-xs text-slate-500">Menampilkan 133 produk terdaftar</p>
+                    </div>
+                    <button id="btn-reset-filter" type="button"
+                            class="text-xs font-medium text-slate-600 hover:text-slate-900 px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] hover:bg-slate-50 transition-colors self-start sm:self-auto cursor-pointer">
+                        Reset Filter
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                    <!-- Kotak Pencarian -->
+                    <div class="lg:col-span-6">
+                        <label for="search-input" class="sr-only">Cari nama produk</label>
+                        <input id="search-input" type="text" placeholder="Cari nama produk..."
+                               class="w-full px-3 py-2 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 transition-colors">
+                    </div>
+
+                    <!-- Filter Kategori -->
+                    <div class="lg:col-span-2">
+                        <label for="filter-kategori" class="sr-only">Kategori</label>
+                        <select id="filter-kategori" class="w-full px-3 py-2 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-slate-700 focus:outline-none focus:bg-white focus:border-blue-500 cursor-pointer">
+                            <option value="ALL">Semua Kategori</option>
+                            <option value="ATK">ATK</option>
+                            <option value="Elektronik">Elektronik</option>
+                            <option value="Jasa">Jasa</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter Asal -->
+                    <div class="lg:col-span-2">
+                        <label for="filter-asal" class="sr-only">Asal Produk</label>
+                        <select id="filter-asal" class="w-full px-3 py-2 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-slate-700 focus:outline-none focus:bg-white focus:border-blue-500 cursor-pointer">
+                            <option value="ALL">Semua Asal</option>
+                            <option value="PDN">PDN</option>
+                            <option value="Import">Import</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter Stok -->
+                    <div class="lg:col-span-2">
+                        <label for="filter-stok" class="sr-only">Status Stok</label>
+                        <select id="filter-stok" class="w-full px-3 py-2 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-slate-700 focus:outline-none focus:bg-white focus:border-blue-500 cursor-pointer">
+                            <option value="ALL">Semua Stok</option>
+                            <option value="Tersedia">Tersedia</option>
+                            <option value="Stok Habis">Stok Habis</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#f8fafc] border-b border-[#e2e8f0] text-xs font-medium text-slate-500 select-none">
+                            <th class="py-3 px-4 w-14 cursor-pointer hover:text-slate-800" data-sort="no">
+                                No <span class="sort-indicator text-slate-400" data-col="no">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 cursor-pointer hover:text-slate-800" data-sort="nama">
+                                Nama Produk <span class="sort-indicator text-slate-400" data-col="nama">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 whitespace-nowrap cursor-pointer hover:text-slate-800" data-sort="kat">
+                                Kategori <span class="sort-indicator text-slate-400" data-col="kat">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 whitespace-nowrap cursor-pointer hover:text-slate-800" data-sort="asal">
+                                Asal <span class="sort-indicator text-slate-400" data-col="asal">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 text-right whitespace-nowrap cursor-pointer hover:text-slate-800" data-sort="harga">
+                                Harga <span class="sort-indicator text-slate-400" data-col="harga">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 text-right whitespace-nowrap cursor-pointer hover:text-slate-800" data-sort="terjual">
+                                Terjual <span class="sort-indicator text-slate-400" data-col="terjual">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 text-right whitespace-nowrap cursor-pointer hover:text-slate-800" data-sort="nilai">
+                                Nilai Terjual <span class="sort-indicator text-slate-400" data-col="nilai">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 whitespace-nowrap cursor-pointer hover:text-slate-800" data-sort="stok">
+                                Stok <span class="sort-indicator text-slate-400" data-col="stok">&#8597;</span>
+                            </th>
+                            <th class="py-3 px-4 text-right whitespace-nowrap">Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-[#e2e8f0] text-sm">
+                        <!-- Diisi oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Kosong jika tidak ada hasil -->
+            <div id="empty-state" class="hidden py-12 px-4 text-center">
+                <p class="text-sm font-medium text-slate-700">Tidak ada produk yang sesuai dengan filter.</p>
+                <p class="text-xs text-slate-500 mt-1">Coba ubah kata kunci pencarian atau reset filter.</p>
+                <button id="btn-empty-reset" type="button"
+                        class="mt-3 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors cursor-pointer">
+                    Tampilkan Semua Produk
+                </button>
+            </div>
+
+            <!-- Footer Tabel & Pagination -->
+            <div id="pagination-footer" class="px-4 sm:px-5 py-3.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+                <div>
+                    Menampilkan <span id="page-start" class="font-medium text-slate-900">1</span>–<span id="page-end" class="font-medium text-slate-900">20</span> dari <span id="page-total" class="font-medium text-slate-900">133</span> produk
+                </div>
+                <div id="pagination-controls" class="flex items-center gap-1 flex-wrap"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 5. Footer Sederhana -->
+    <footer class="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <p>SEMESTADATA &middot; Makassar, Sulawesi Selatan</p>
+        <p>Sumber data: Katalog Elektronik INAPROC per 5 November 2026</p>
+    </footer>
+
+    <!-- Modal Detail Produk Sederhana -->
+    <div id="product-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-slate-900/40" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="bg-white rounded-xl border border-[#e2e8f0] max-w-lg w-full p-5 sm:p-6 shadow-lg space-y-4">
+            <div class="flex items-start justify-between gap-4 border-b border-[#e2e8f0] pb-3">
+                <div>
+                    <span id="modal-no-jenis" class="text-xs text-slate-500">Produk #1 &middot; Barang</span>
+                    <h3 id="modal-title" class="text-base sm:text-lg font-semibold text-slate-900 mt-0.5 leading-snug">Nama Produk</h3>
+                </div>
+                <button id="btn-close-modal" type="button" aria-label="Tutup detail"
+                        class="text-slate-400 hover:text-slate-700 text-lg leading-none px-1.5 py-0.5 rounded-lg hover:bg-slate-100 cursor-pointer">
+                    &times;
+                </button>
+            </div>
+
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs sm:text-sm">
+                <div>
+                    <dt class="text-slate-500 text-xs">Kategori</dt>
+                    <dd id="modal-kat" class="font-medium text-slate-900 mt-0.5">-</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500 text-xs">Asal Produk</dt>
+                    <dd id="modal-asal" class="font-medium text-slate-900 mt-0.5">-</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500 text-xs">TKDN / BMP</dt>
+                    <dd id="modal-tkdn" class="font-medium text-slate-900 mt-0.5">-</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500 text-xs">Status Stok</dt>
+                    <dd id="modal-stok" class="font-medium text-slate-900 mt-0.5">-</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500 text-xs">Harga Satuan</dt>
+                    <dd id="modal-harga" class="font-medium text-slate-900 mt-0.5 tabular-nums">-</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500 text-xs">Unit Terjual</dt>
+                    <dd id="modal-terjual" class="font-medium text-slate-900 mt-0.5 tabular-nums">-</dd>
+                </div>
+                <div class="col-span-2 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] p-3 flex items-center justify-between">
+                    <span class="text-xs text-slate-600">Perkiraan Nilai Terjual</span>
+                    <span id="modal-nilai" class="text-sm sm:text-base font-semibold text-slate-900 tabular-nums">Rp 0</span>
+                </div>
+            </dl>
+
+            <div class="pt-2 flex items-center justify-end gap-2">
+                <button id="btn-modal-tutup" type="button"
+                        class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-700 bg-white border border-[#e2e8f0] hover:bg-slate-50 transition-colors cursor-pointer">
+                    Tutup
+                </button>
+                <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer"
+                   class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    Buka di INAPROC
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data lengkap 133 produk CV SEMESTADATA (sumber Katalog INAPROC per 5 November 2026)
+        const PRODUCTS_DATA = [
+            {"no": 1, "nama": "SMART IRIGASI - IOT", "kat": "Elektronik", "harga": 210000000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/smart-irigasi-iot"},
+            {"no": 2, "nama": "Automatic Weather Station Data Logger With Solar Panel", "kat": "Elektronik", "harga": 330000000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/automatic-weather-station-data-logger-with-solar-panel"},
+            {"no": 3, "nama": "Scanner Epson DS-C330", "kat": "Elektronik", "harga": 6216000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/scanner-epson-ds-c330"},
+            {"no": 4, "nama": "PORTABLE IOT METER - SMART FARMING", "kat": "Elektronik", "harga": 206999999, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/portable-iot-meter-smart-farming"},
+            {"no": 5, "nama": "SENDOK PLASTIK", "kat": "ATK", "harga": 19980, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/sendok-plastik"},
+            {"no": 6, "nama": "Paku Sadel Kabel Masko No 6 mm Isi 50 pcs", "kat": "Elektronik", "harga": 11100, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/paku-sadel-kabel-masko-no-6-mm-isi-50-pcs"},
+            {"no": 7, "nama": "MASKO Kabel Ties Putih 2,5x100mm", "kat": "Elektronik", "harga": 11100, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/masko-kabel-ties-putih-2-5x100mm"},
+            {"no": 8, "nama": "STEKER ARDE BROCO 13310 COLOKAN BROCO", "kat": "Elektronik", "harga": 22200, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/steker-arde-broco-13310-colokan-broco"},
+            {"no": 9, "nama": "Ducting Pelindung Kabel 12x12", "kat": "Elektronik", "harga": 22200, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/ducting-pelindung-kabel-12x12"},
+            {"no": 10, "nama": "DURADUS PUTIH 120x120", "kat": "Elektronik", "harga": 27750, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/duradus-putih-120x120"},
+            {"no": 11, "nama": "SUPREME CABLE - Kabel Listrik Serabut Tembaga Murni Fleksibel - NYMHY BLACK/NYYHY 2 x 1.5 mm", "kat": "Elektronik", "harga": 22200, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/supreme-cable-kabel-listrik-serabut-tembaga-murni-fleksibel-nymhy-black-nyyhy-2-x-1-5-mm"},
+            {"no": 12, "nama": "Stop Kontak 2 Lubang", "kat": "Elektronik", "harga": 22200, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/stop-kontak-2-lubang"},
+            {"no": 13, "nama": "HDTV KVM Extender– 60M", "kat": "Elektronik", "harga": 971250, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/hdtv-kvm-extender-60m"},
+            {"no": 14, "nama": "AMP Connector RJ45 Kabel LAN 1 Pack Isi 100 pcs", "kat": "Elektronik", "harga": 166500, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/amp-connector-rj45-kabel-lan-1-pack-isi-100-pcs"},
+            {"no": 15, "nama": "POE Dahua 8 Port S3010-8ET2ET-60", "kat": "Elektronik", "harga": 1221000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/poe-dahua-8-port-s3010-8et2et-60"},
+            {"no": 16, "nama": "Kabel UTP CAT 6 Dahua", "kat": "Elektronik", "harga": 1665000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/kabel-utp-cat-6-dahua"},
+            {"no": 17, "nama": "Fantech HyperLINK Kabel Data Fast Charging USB-C to USB-C 100W", "kat": "Elektronik", "harga": 127650, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/fantech-hyperlink-kabel-data-fast-charging-usb-c-to-usb-c-100w"},
+            {"no": 18, "nama": "TISSUE CLEAN PLUS 1KG", "kat": "ATK", "harga": 52725, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 150, "stok": "Stok Habis", "nilai": 7908750, "link": "https://katalog.inaproc.id/semestadata/tissue-clean-plus-1kg"},
+            {"no": 19, "nama": "TP-Link TL-SG3210 8-Port Gigabit Managed", "kat": "Elektronik", "harga": 2775000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/tp-link-tl-sg3210-8-port-gigabit-managed"},
+            {"no": 20, "nama": "RAK SERVER WALLMOUNTH 4U INDORACK WR5004S + INSTALASI", "kat": "Elektronik", "harga": 3052500, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/rak-server-wallmounth-4u-indorack-wr5004s-instalasi"},
+            {"no": 21, "nama": "KABEL UTP CAT 6 COMMSCOPE", "kat": "Elektronik", "harga": 3330000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/kabel-utp-cat-6-commscope"},
+            {"no": 22, "nama": "Commscope RJ45 Cat 6/6A Isi 100 Pcs Besi", "kat": "Elektronik", "harga": 1665000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/commscope-rj45-cat-6-6a-isi-100-pcs-besi"},
+            {"no": 23, "nama": "IMOU PoE Outdoor PS3D 3MP CCTV Camera", "kat": "Elektronik", "harga": 1082250, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/imou-poe-outdoor-ps3d-3mp-cctv-camera"},
+            {"no": 24, "nama": "IMOU PoE PS8D 3MP Smart CCTV Outdoor (Turret/Dome)", "kat": "Elektronik", "harga": 1082250, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/imou-poe-ps8d-3mp-smart-cctv-outdoor-turret-dome"},
+            {"no": 25, "nama": "HP OPPO A6S | GARANSI RESMI OPPO INDONESIA - 8/128GB", "kat": "Elektronik", "harga": 6549000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/hp-oppo-a6s-garansi-resmi-oppo-indonesia-8-128gb"},
+            {"no": 26, "nama": "Redmi Pad 2 Pro | 12.1\" 2.5K Crystal-Clear Display | Massive 12000mAh (typ) Battery Garansi Resmi - 8/256 GB", "kat": "Elektronik", "harga": 6549000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/redmi-pad-2-pro-12-1-2-5k-crystal-clear-display-massive-12000mah-typ-battery-garansi-resmi-8-256-gb"},
+            {"no": 27, "nama": "Baterai / Accu N70 (75ah)", "kat": "Elektronik", "harga": 1882560, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/baterai-accu-n70-75ah"},
+            {"no": 28, "nama": "Joyko Paper Clip No 5", "kat": "ATK", "harga": 7215, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 50, "stok": "Tersedia", "nilai": 360750, "link": "https://katalog.inaproc.id/semestadata/joyko-paper-clip-no-5"},
+            {"no": 29, "nama": "Joyko Binder Clips No 111", "kat": "ATK", "harga": 7770, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 60, "stok": "Tersedia", "nilai": 466200, "link": "https://katalog.inaproc.id/semestadata/joyko-binder-clips-no-111"},
+            {"no": 30, "nama": "Autoprint Glosy Paper 4R 230 Gsm", "kat": "ATK", "harga": 16650, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 10, "stok": "Tersedia", "nilai": 166500, "link": "https://katalog.inaproc.id/semestadata/autoprint-glosy-paper-4r-230-gsm"},
+            {"no": 31, "nama": "Yuri Hand Soap 375ML", "kat": "ATK", "harga": 28860, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 80, "stok": "Tersedia", "nilai": 2308800, "link": "https://katalog.inaproc.id/semestadata/yuri-hand-soap-375ml"},
+            {"no": 32, "nama": "Kertas HVS F4 Warna", "kat": "ATK", "harga": 98790, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 98790, "link": "https://katalog.inaproc.id/semestadata/kertas-hvs-f4-warna"},
+            {"no": 33, "nama": "Kingco Paper Clip No.3", "kat": "ATK", "harga": 4218, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 50, "stok": "Stok Habis", "nilai": 210900, "link": "https://katalog.inaproc.id/semestadata/kingco-paper-clip-no-3"},
+            {"no": 34, "nama": "Gunting VIS-1 V500 Besar", "kat": "ATK", "harga": 17760, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 12, "stok": "Tersedia", "nilai": 213120, "link": "https://katalog.inaproc.id/semestadata/gunting-vis-1-v500-besar"},
+            {"no": 35, "nama": "Double Tape 48mm", "kat": "ATK", "harga": 12210, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 5, "stok": "Tersedia", "nilai": 61050, "link": "https://katalog.inaproc.id/semestadata/double-tape-48mm"},
+            {"no": 36, "nama": "Double Tape 12mm", "kat": "ATK", "harga": 3885, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 5, "stok": "Tersedia", "nilai": 19425, "link": "https://katalog.inaproc.id/semestadata/double-tape-12mm"},
+            {"no": 37, "nama": "Joyko Cutter L-500", "kat": "ATK", "harga": 20246, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 12, "stok": "Tersedia", "nilai": 242952, "link": "https://katalog.inaproc.id/semestadata/joyko-cutter-l-500"},
+            {"no": 38, "nama": "Montana Paper Clip No.5", "kat": "ATK", "harga": 6105, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/montana-paper-clip-no-5"},
+            {"no": 39, "nama": "Esco Binder Clip - 111", "kat": "ATK", "harga": 7770, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/esco-binder-clip-111"},
+            {"no": 40, "nama": "Eselon Stapler HD-10", "kat": "ATK", "harga": 15540, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 24, "stok": "Tersedia", "nilai": 372960, "link": "https://katalog.inaproc.id/semestadata/eselon-stapler-hd-10"},
+            {"no": 41, "nama": "Kingco Lakban OPP 48MM 100Yard", "kat": "ATK", "harga": 16650, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 20, "stok": "Tersedia", "nilai": 333000, "link": "https://katalog.inaproc.id/semestadata/kingco-lakban-opp-48mm-100yard"},
+            {"no": 42, "nama": "Mika Bento 4 Sekat Polos", "kat": "ATK", "harga": 2775, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 150, "stok": "Tersedia", "nilai": 416250, "link": "https://katalog.inaproc.id/semestadata/mika-bento-4-sekat-polos"},
+            {"no": 43, "nama": "Service Ganti LCD PC AIO Lenovo 24\"", "kat": "Jasa", "harga": 1887000, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/service-ganti-lcd-pc-aio-lenovo-24"},
+            {"no": 44, "nama": "SPEAKER AKTIF JBL EON 718S 18 INCH", "kat": "Elektronik", "harga": 21090000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 21090000, "link": "https://katalog.inaproc.id/semestadata/speaker-aktif-jbl-eon-718s-18-inch"},
+            {"no": 45, "nama": "SPEAKER AKTIF JBL EON 715 15 INCH", "kat": "Elektronik", "harga": 10989000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 10989000, "link": "https://katalog.inaproc.id/semestadata/speaker-aktif-jbl-eon-715-15-inch"},
+            {"no": 46, "nama": "Brankas Maestro 120cm", "kat": "ATK", "harga": 34965000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 34965000, "link": "https://katalog.inaproc.id/semestadata/brankas-maestro-120cm"},
+            {"no": 47, "nama": "Lemari Arsip Besi Cabinet Jumbo 3 Pintu", "kat": "ATK", "harga": 9990000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 3, "stok": "Tersedia", "nilai": 29970000, "link": "https://katalog.inaproc.id/semestadata/lemari-arsip-besi-cabinet-jumbo-3-pintu"},
+            {"no": 48, "nama": "Lemari Samping / Lemari Serbaguna / Cradenza / Buffet / Kabinet CR 016 / CR 017 - SIANTANO", "kat": "ATK", "harga": 8991000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/lemari-samping-lemari-serbaguna-cradenza-buffet-kabinet-cr-016-cr-017-siantano"},
+            {"no": 49, "nama": "JBL Mic Wireless VM300 Original", "kat": "Elektronik", "harga": 5244750, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/jbl-mic-wireless-vm300-original"},
+            {"no": 50, "nama": "Mesin Penghitung Uang Kassen MC-50C", "kat": "Elektronik", "harga": 5439000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/mesin-penghitung-uang-kassen-mc-50c"},
+            {"no": 51, "nama": "Mixer Audio Yamaha MGP24X ORIGINAL", "kat": "Elektronik", "harga": 21645000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 21645000, "link": "https://katalog.inaproc.id/semestadata/mixer-audio-yamaha-mgp24x-original"},
+            {"no": 52, "nama": "INSTALASI CCTV IPCAM 16 CHANEL", "kat": "Jasa", "harga": 5605500, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/instalasi-cctv-ipcam-16-chanel"},
+            {"no": 53, "nama": "Hit Non Stop Set Alat + Refill Obat Nyamuk Elektrik", "kat": "ATK", "harga": 27750, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 10, "stok": "Tersedia", "nilai": 277500, "link": "https://katalog.inaproc.id/semestadata/hit-non-stop-set-alat-refill-obat-nyamuk-elektrik"},
+            {"no": 54, "nama": "Hit Aerosol 600ml", "kat": "ATK", "harga": 55500, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 30, "stok": "Tersedia", "nilai": 1665000, "link": "https://katalog.inaproc.id/semestadata/hit-aerosol-600ml"},
+            {"no": 55, "nama": "STAPLER TARGET HDFS-11", "kat": "ATK", "harga": 377400, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 377400, "link": "https://katalog.inaproc.id/semestadata/stapler-target-hdfs-11"},
+            {"no": 56, "nama": "Kalkulator Target MC-380 Original", "kat": "ATK", "harga": 149850, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 299700, "link": "https://katalog.inaproc.id/semestadata/kalkulator-target-mc-380-original"},
+            {"no": 57, "nama": "FANTECH GO W608 OFFICE WIRELESS Mouse", "kat": "Elektronik", "harga": 122100, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/fantech-go-w608-office-wireless-mouse"},
+            {"no": 58, "nama": "KERTAS NCR / KERTAS CONTINUOUS FORM 2 PLY 9 1/2\" x 11 DEPAPER - 2 PLY - PRS", "kat": "ATK", "harga": 416250, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 5, "stok": "Tersedia", "nilai": 2081250, "link": "https://katalog.inaproc.id/semestadata/kertas-ncr-kertas-continuous-form-2-ply-9-1-2-x-11-depaper-2-ply-prs"},
+            {"no": 59, "nama": "V-Tec Pemotong Kertas B4", "kat": "ATK", "harga": 277500, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 277500, "link": "https://katalog.inaproc.id/semestadata/v-tec-pemotong-kertas-b4"},
+            {"no": 60, "nama": "KERTAS COVER JILID F4", "kat": "ATK", "harga": 39960, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 25, "stok": "Tersedia", "nilai": 999000, "link": "https://katalog.inaproc.id/semestadata/kertas-cover-jilid-f4"},
+            {"no": 61, "nama": "paper cutter", "kat": "ATK", "harga": 432900, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/paper-cutter"},
+            {"no": 62, "nama": "Map Snelhektar Bening", "kat": "ATK", "harga": 61050, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 122100, "link": "https://katalog.inaproc.id/semestadata/map-snelhektar-bening"},
+            {"no": 63, "nama": "Pulpen Snowman V-5 Hitam", "kat": "ATK", "harga": 54390, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 30, "stok": "Tersedia", "nilai": 1631700, "link": "https://katalog.inaproc.id/semestadata/pulpen-snowman-v-5-hitam"},
+            {"no": 64, "nama": "KERTAS NCR 2PLY", "kat": "ATK", "harga": 677100, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/kertas-ncr-2ply"},
+            {"no": 65, "nama": "Wireless Router TP-Link Archer C54 - AC1200", "kat": "Elektronik", "harga": 439394, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 439394, "link": "https://katalog.inaproc.id/semestadata/wireless-router-tp-link-archer-c54-ac1200"},
+            {"no": 66, "nama": "TP LINK Archer T2U Plus", "kat": "Elektronik", "harga": 249750, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 6, "stok": "Tersedia", "nilai": 1498500, "link": "https://katalog.inaproc.id/semestadata/tp-link-archer-t2u-plus"},
+            {"no": 67, "nama": "Yuri Hand Soap Jerigen 3.7 L | Sabun pencuci tangan", "kat": "ATK", "harga": 249750, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 5, "stok": "Tersedia", "nilai": 1248750, "link": "https://katalog.inaproc.id/semestadata/yuri-hand-soap-jerigen-3-7-l-sabun-pencuci-tangan"},
+            {"no": 68, "nama": "INSTALASI CCTV ANALOG 16 CHANEL", "kat": "Jasa", "harga": 4995000, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/instalasi-cctv-analog-16-chanel"},
+            {"no": 69, "nama": "CCTV DAHUA 16 CHANEL", "kat": "Elektronik", "harga": 16866450, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/cctv-dahua-16-chanel"},
+            {"no": 70, "nama": "Mouse Wireless Robot M317 4000 DPI", "kat": "Elektronik", "harga": 122100, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 13, "stok": "Tersedia", "nilai": 1587300, "link": "https://katalog.inaproc.id/semestadata/mouse-wireless-robot-m317-4000-dpi"},
+            {"no": 71, "nama": "Ribbon Catridge Epson LQ310", "kat": "ATK", "harga": 105450, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 210900, "link": "https://katalog.inaproc.id/semestadata/ribbon-catridge-epson-lq310"},
+            {"no": 72, "nama": "ISOLASI BENING 1 INCH 72 YARD DAIMARU", "kat": "ATK", "harga": 9990, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 10, "stok": "Tersedia", "nilai": 99900, "link": "https://katalog.inaproc.id/semestadata/isolasi-bening-1-inch-72-yard-daimaru"},
+            {"no": 73, "nama": "Heavy Duty Punch No 85B Joyko / Pembolong Kertas 2 Lubang", "kat": "ATK", "harga": 88800, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 88800, "link": "https://katalog.inaproc.id/semestadata/heavy-duty-punch-no-85b-joyko-pembolong-kertas-2-lubang"},
+            {"no": 74, "nama": "MOUSE PAD FANTECH MP64 XL", "kat": "Elektronik", "harga": 33300, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 5, "stok": "Tersedia", "nilai": 166500, "link": "https://katalog.inaproc.id/semestadata/mouse-pad-fantech-mp64-xl"},
+            {"no": 75, "nama": "NEW CATRIDGE TONER CANON 325 COMPATIBLE", "kat": "ATK", "harga": 222000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 3, "stok": "Tersedia", "nilai": 666000, "link": "https://katalog.inaproc.id/semestadata/new-catridge-toner-canon-325-compatible"},
+            {"no": 76, "nama": "BUKU KWITANSI BESAR - 50 B", "kat": "ATK", "harga": 16650, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 20, "stok": "Tersedia", "nilai": 333000, "link": "https://katalog.inaproc.id/semestadata/buku-kwitansi-besar-50-b"},
+            {"no": 77, "nama": "BUKU EXPEDISI UKURAN BASTER PAPERLINE 100", "kat": "ATK", "harga": 22200, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 20, "stok": "Tersedia", "nilai": 444000, "link": "https://katalog.inaproc.id/semestadata/buku-expedisi-ukuran-baster-paperline-100"},
+            {"no": 78, "nama": "TAPE DISPENSER MERK TARGET 2012", "kat": "ATK", "harga": 66600, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 133200, "link": "https://katalog.inaproc.id/semestadata/tape-dispenser-merk-target-2012"},
+            {"no": 79, "nama": "PULPEN SNOWMAN V-1 HTM", "kat": "ATK", "harga": 36630, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 10, "stok": "Tersedia", "nilai": 366300, "link": "https://katalog.inaproc.id/semestadata/pulpen-snowman-v-1-htm"},
+            {"no": 80, "nama": "MOUSE WIRELESS ROBOT M210S", "kat": "Elektronik", "harga": 111000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/mouse-wireless-robot-m210s"},
+            {"no": 81, "nama": "Super Sol 750Ml", "kat": "ATK", "harga": 31080, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 50, "stok": "Tersedia", "nilai": 1554000, "link": "https://katalog.inaproc.id/semestadata/super-sol-750ml"},
+            {"no": 82, "nama": "Sunlight 610Ml", "kat": "ATK", "harga": 12765, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 50, "stok": "Tersedia", "nilai": 638250, "link": "https://katalog.inaproc.id/semestadata/sunlight-610ml"},
+            {"no": 83, "nama": "Samsung TV 32\" HD H5000 TV + Bracket", "kat": "Elektronik", "harga": 3638580, "jenis": "Barang", "asal": "PDN", "tkdn": "TKDN+BMP 37.88%", "terjual": 3, "stok": "Tersedia", "nilai": 10915740, "link": "https://katalog.inaproc.id/semestadata/samsung-tv-32-hd-h5000-tv-bracket"},
+            {"no": 84, "nama": "Xiaomi A Pro 32 Inch 2026 QLED Full HD Google TV Smart Assistant", "kat": "Elektronik", "harga": 2775000, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/xiaomi-a-pro-32-inch-2026-qled-full-hd-google-tv-smart-assistant"},
+            {"no": 85, "nama": "Setrika Uap Kris Bisa Portable", "kat": "Elektronik", "harga": 832500, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 1665000, "link": "https://katalog.inaproc.id/semestadata/setrika-uap-kris-bisa-portable"},
+            {"no": 86, "nama": "Licence Aplikasi Canva 1 Tahun", "kat": "Jasa", "harga": 1443000, "jenis": "Digital", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/licence-aplikasi-canva-1-tahun"},
+            {"no": 87, "nama": "Service Printer Epson L Series / A4", "kat": "Jasa", "harga": 166500, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/service-printer-epson-l-series-a4"},
+            {"no": 88, "nama": "Service Mainboard PC AIO", "kat": "Jasa", "harga": 832500, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/service-mainboard-pc-aio"},
+            {"no": 89, "nama": "Setrika Uap Philips DST5040/80, Philips Steam Iron DST5040", "kat": "Elektronik", "harga": 1831500, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/setrika-uap-philips-dst5040-80-philips-steam-iron-dst5040"},
+            {"no": 90, "nama": "Setrika Philips", "kat": "Elektronik", "harga": 499500, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 999000, "link": "https://katalog.inaproc.id/semestadata/setrika-philips"},
+            {"no": 91, "nama": "Toner HP85A Compatible", "kat": "ATK", "harga": 208680, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/toner-hp85a-compatible"},
+            {"no": 92, "nama": "Toner HP107A Comptible", "kat": "ATK", "harga": 208680, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/toner-hp107a-comptible"},
+            {"no": 93, "nama": "Service Printer Epson L120", "kat": "Jasa", "harga": 166500, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/service-printer-epson-l120"},
+            {"no": 94, "nama": "Service Printer Epson L3210", "kat": "Jasa", "harga": 277500, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/service-printer-epson-l3210"},
+            {"no": 95, "nama": "Map Kertas", "kat": "ATK", "harga": 2000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/map-kertas"},
+            {"no": 96, "nama": "Map Plastik", "kat": "ATK", "harga": 2000, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/map-plastik"},
+            {"no": 97, "nama": "Box Arsip", "kat": "ATK", "harga": 33300, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/box-arsip"},
+            {"no": 98, "nama": "SIDU HVS A4 75GR", "kat": "ATK", "harga": 64380, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 40, "stok": "Tersedia", "nilai": 2575200, "link": "https://katalog.inaproc.id/semestadata/sidu-hvs-a4-75gr"},
+            {"no": 99, "nama": "SIDU HVS F4 75GR", "kat": "ATK", "harga": 68820, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 30, "stok": "Tersedia", "nilai": 2064600, "link": "https://katalog.inaproc.id/semestadata/sidu-hvs-f4-75gr"},
+            {"no": 100, "nama": "Spidol Whiteboard", "kat": "ATK", "harga": 10989, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/spidol-whiteboard"},
+            {"no": 101, "nama": "Buku Tullis", "kat": "ATK", "harga": 57720, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/buku-tullis"},
+            {"no": 102, "nama": "Map Ordner Folio", "kat": "ATK", "harga": 35520, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/map-ordner-folio"},
+            {"no": 103, "nama": "Ballpoint", "kat": "ATK", "harga": 40515, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/ballpoint"},
+            {"no": 104, "nama": "Standbook", "kat": "ATK", "harga": 35520, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/standbook"},
+            {"no": 105, "nama": "Stabilo/Spidol Penanda", "kat": "ATK", "harga": 11100, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/stabilo-spidol-penanda"},
+            {"no": 106, "nama": "Tip-X", "kat": "ATK", "harga": 8880, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/tip-x"},
+            {"no": 107, "nama": "Lakban Bening", "kat": "ATK", "harga": 16650, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/lakban-bening"},
+            {"no": 108, "nama": "Peluru Staples", "kat": "ATK", "harga": 5550, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/peluru-staples"},
+            {"no": 109, "nama": "Wireless TPlink TL-WN725N", "kat": "Elektronik", "harga": 149850, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 6, "stok": "Tersedia", "nilai": 899100, "link": "https://katalog.inaproc.id/semestadata/wireless-tplink-tl-wn725n"},
+            {"no": 110, "nama": "Service Printer Epson L6190", "kat": "Jasa", "harga": 277500, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 277500, "link": "https://katalog.inaproc.id/semestadata/service-printer-epson-l6190"},
+            {"no": 111, "nama": "Adaptor Lenovo 19.5V 6.15A 120W USB", "kat": "Elektronik", "harga": 277500, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 277500, "link": "https://katalog.inaproc.id/semestadata/adaptor-lenovo-19-5v-6-15a-120w-usb"},
+            {"no": 112, "nama": "Layar Led Lcd Laptop Axioo MyBook Pro F3", "kat": "Elektronik", "harga": 832500, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 832500, "link": "https://katalog.inaproc.id/semestadata/layar-led-lcd-laptop-axioo-mybook-pro-f3"},
+            {"no": 113, "nama": "Instalasi Program", "kat": "Jasa", "harga": 250000, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/instalasi-program"},
+            {"no": 114, "nama": "SSD 512 GB SATA DIGITAL ALLIANCE", "kat": "Elektronik", "harga": 769999, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/ssd-512-gb-sata-digital-alliance"},
+            {"no": 115, "nama": "Recovery Data Hardisk", "kat": "Jasa", "harga": 11949999, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/recovery-data-hardisk"},
+            {"no": 116, "nama": "EPSON L3251", "kat": "Elektronik", "harga": 3718500, "jenis": "Barang", "asal": "PDN", "tkdn": "TKDN+BMP 75.29%", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/epson-l3251"},
+            {"no": 117, "nama": "Wireless TPLink TL-WN722N", "kat": "Elektronik", "harga": 138750, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 138750, "link": "https://katalog.inaproc.id/semestadata/wireless-tplink-tl-wn722n"},
+            {"no": 118, "nama": "Memory PC Longdimm DDR3 - 4GB PC3 12800", "kat": "Elektronik", "harga": 249750, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 249750, "link": "https://katalog.inaproc.id/semestadata/memory-pc-longdimm-ddr3-4gb-pc3-12800"},
+            {"no": 119, "nama": "EPSON TINTA BOTOL 664 70ML ORIGINAL", "kat": "ATK", "harga": 119880, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 28, "stok": "Tersedia", "nilai": 3356640, "link": "https://katalog.inaproc.id/semestadata/epson-tinta-botol-664-70ml-original"},
+            {"no": 120, "nama": "EPSON TINTA BOTOL 003 70ML ORIGINAL", "kat": "ATK", "harga": 116550, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 31, "stok": "Tersedia", "nilai": 3613050, "link": "https://katalog.inaproc.id/semestadata/epson-tinta-botol-003-70ml-original"},
+            {"no": 121, "nama": "Service PC / AIO", "kat": "Jasa", "harga": 166500, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 3, "stok": "Tersedia", "nilai": 499500, "link": "https://katalog.inaproc.id/semestadata/service-pc-aio"},
+            {"no": 122, "nama": "Service Laptop", "kat": "Jasa", "harga": 444000, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 3, "stok": "Tersedia", "nilai": 1332000, "link": "https://katalog.inaproc.id/semestadata/service-laptop"},
+            {"no": 123, "nama": "Service Printer HP107", "kat": "Jasa", "harga": 555000, "jenis": "Jasa", "asal": "PDN", "tkdn": "-", "terjual": 3, "stok": "Tersedia", "nilai": 1665000, "link": "https://katalog.inaproc.id/semestadata/service-printer-hp107"},
+            {"no": 124, "nama": "Mini Display Port to HDMI Converter 4K", "kat": "Elektronik", "harga": 138750, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 138750, "link": "https://katalog.inaproc.id/semestadata/mini-display-port-to-hdmi-converter-4k"},
+            {"no": 125, "nama": "TINTA CANON 100ML", "kat": "ATK", "harga": 49950, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 6, "stok": "Tersedia", "nilai": 299700, "link": "https://katalog.inaproc.id/semestadata/tinta-canon-100ml"},
+            {"no": 126, "nama": "CATRIDGE CANON 811 WARNA", "kat": "ATK", "harga": 366300, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 732600, "link": "https://katalog.inaproc.id/semestadata/catridge-canon-811-warna"},
+            {"no": 127, "nama": "CATRIDGE CANON 810 HITAM", "kat": "ATK", "harga": 306360, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 2, "stok": "Tersedia", "nilai": 612720, "link": "https://katalog.inaproc.id/semestadata/catridge-canon-810-hitam"},
+            {"no": 128, "nama": "REFILL TONER HP 85A", "kat": "ATK", "harga": 208680, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 8, "stok": "Tersedia", "nilai": 1669440, "link": "https://katalog.inaproc.id/semestadata/refill-toner-hp-85a"},
+            {"no": 129, "nama": "EPSON TINTA BOTOL 001 COLOUR 70ML ORIGINAL", "kat": "ATK", "harga": 166500, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 30, "stok": "Tersedia", "nilai": 4995000, "link": "https://katalog.inaproc.id/semestadata/epson-tinta-botol-001-colour-70ml-original"},
+            {"no": 130, "nama": "EPSON TINTA BOTOL 001 BLACK 127ML ORIGINAL", "kat": "ATK", "harga": 238650, "jenis": "Barang", "asal": "Import", "tkdn": "-", "terjual": 14, "stok": "Tersedia", "nilai": 3341100, "link": "https://katalog.inaproc.id/semestadata/epson-tinta-botol-001-black-127ml-original"},
+            {"no": 131, "nama": "PRINTER EPSON L3210", "kat": "Elektronik", "harga": 2830500, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 0, "stok": "Tersedia", "nilai": 0, "link": "https://katalog.inaproc.id/semestadata/printer-epson-l3210"},
+            {"no": 132, "nama": "REFILL TONER HP 107A", "kat": "ATK", "harga": 208680, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 77, "stok": "Tersedia", "nilai": 16068360, "link": "https://katalog.inaproc.id/semestadata/refill-toner-hp-107a"},
+            {"no": 133, "nama": "Meja Setrika Besi", "kat": "Elektronik", "harga": 832500, "jenis": "Barang", "asal": "PDN", "tkdn": "-", "terjual": 1, "stok": "Tersedia", "nilai": 832500, "link": "https://katalog.inaproc.id/semestadata/meja-setrika-besi"}
+        ];
+
+        const state = {
+            search: '',
+            kategori: 'ALL',
+            asal: 'ALL',
+            stok: 'ALL',
+            sortBy: 'no',
+            sortDir: 'asc',
+            currentPage: 1,
+            rowsPerPage: 20
+        };
+
+        let chartKategori = null;
+        let chartTop8 = null;
+
+        function formatRupiah(val) {
+            return 'Rp ' + Number(val || 0).toLocaleString('id-ID');
+        }
+
+        function formatNumber(val) {
+            return Number(val || 0).toLocaleString('id-ID');
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = 'pointer-events-auto bg-slate-800 text-white text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow';
+            el.textContent = message;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 2600);
+        }
+
+        function getFilteredData() {
+            const q = state.search.trim().toLowerCase();
+            return PRODUCTS_DATA.filter(item => {
+                if (q && !item.nama.toLowerCase().includes(q)) return false;
+                if (state.kategori !== 'ALL' && item.kat !== state.kategori) return false;
+                if (state.asal !== 'ALL' && item.asal !== state.asal) return false;
+                if (state.stok !== 'ALL' && item.stok !== state.stok) return false;
+                return true;
+            }).sort((a, b) => {
+                let va = a[state.sortBy];
+                let vb = b[state.sortBy];
+                if (typeof va === 'string') {
+                    va = va.toLowerCase();
+                    vb = vb.toLowerCase();
+                    return state.sortDir === 'asc' ? va.localeCompare(vb, 'id') : vb.localeCompare(va, 'id');
+                }
+                return state.sortDir === 'asc' ? va - vb : vb - va;
+            });
+        }
+
+        function updateSummary(filtered) {
+            const totalProduk = filtered.length;
+            const totalUnit = filtered.reduce((acc, p) => acc + p.terjual, 0);
+            const totalNilai = filtered.reduce((acc, p) => acc + p.nilai, 0);
+            const lakuCount = filtered.filter(p => p.terjual > 0).length;
+            const habisItems = filtered.filter(p => p.stok === 'Stok Habis');
+
+            const atk = filtered.filter(p => p.kat === 'ATK').length;
+            const elek = filtered.filter(p => p.kat === 'Elektronik').length;
+            const jasa = filtered.filter(p => p.kat === 'Jasa').length;
+
+            const pdnNilai = filtered.filter(p => p.asal === 'PDN').reduce((acc, p) => acc + p.nilai, 0);
+            const impNilai = filtered.filter(p => p.asal === 'Import').reduce((acc, p) => acc + p.nilai, 0);
+            const pctLaku = totalProduk > 0 ? ((lakuCount / totalProduk) * 100).toFixed(1).replace('.', ',') : '0,0';
+
+            document.getElementById('kpi-total-produk').textContent = formatNumber(totalProduk);
+            document.getElementById('kpi-sub-kategori').textContent = `ATK ${atk} · Elektronik ${elek} · Jasa ${jasa}`;
+
+            document.getElementById('kpi-total-unit').textContent = formatNumber(totalUnit);
+            document.getElementById('kpi-sub-laku').textContent = `Dari ${lakuCount} produk terjual (${pctLaku}%)`;
+
+            document.getElementById('kpi-total-nilai').textContent = formatRupiah(totalNilai);
+            document.getElementById('kpi-sub-asal').textContent =
+                `PDN Rp ${(pdnNilai / 1000000).toFixed(1).replace('.', ',')} jt · Import Rp ${(impNilai / 1000000).toFixed(1).replace('.', ',')} jt`;
+
+            document.getElementById('kpi-stok-habis').textContent = formatNumber(habisItems.length);
+            const tersediaCount = totalProduk - habisItems.length;
+            document.getElementById('kpi-sub-stok').textContent = habisItems.length > 0
+                ? `${tersediaCount} item tersedia · ${habisItems.map(i => i.nama).join(', ')}`
+                : `${tersediaCount} item tersedia`;
+
+            document.getElementById('export-count').textContent = totalProduk;
+            document.getElementById('table-summary-text').textContent =
+                totalProduk === PRODUCTS_DATA.length
+                    ? 'Menampilkan seluruh 133 produk terdaftar'
+                    : `Menampilkan ${totalProduk} dari 133 produk sesuai filter`;
+        }
+
+        function initCharts() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#64748b';
+
+            // Grafik 1: Penjualan per Kategori
+            const categories = ['ATK', 'Elektronik', 'Jasa'];
+            const catTotals = categories.map(cat =>
+                PRODUCTS_DATA.filter(p => p.kat === cat).reduce((sum, p) => sum + p.nilai, 0)
+            );
+
+            chartKategori = new Chart(document.getElementById('chartKategori').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Perkiraan Nilai Terjual',
+                        data: catTotals,
+                        backgroundColor: ['#2563eb', '#60a5fa', '#94a3b8'],
+                        borderRadius: 6,
+                        maxBarThickness: 56
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: ctx => ` ${formatRupiah(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                font: { size: 11 },
+                                callback: val => val >= 1000000 ? 'Rp ' + (val / 1000000) + ' jt' : formatRupiah(val)
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 12, weight: '500' }, color: '#334155' }
+                        }
+                    }
+                }
+            });
+
+            // Grafik 2: Produk Terlaris (Top 8 Berdasarkan Nilai Terjual)
+            const top8 = [...PRODUCTS_DATA]
+                .filter(p => p.nilai > 0)
+                .sort((a, b) => b.nilai - a.nilai)
+                .slice(0, 8);
+
+            chartTop8 = new Chart(document.getElementById('chartTop8').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: top8.map(p => p.nama.length > 28 ? p.nama.slice(0, 28) + '...' : p.nama),
+                    datasets: [{
+                        label: 'Nilai Terjual',
+                        data: top8.map(p => p.nilai),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6,
+                        maxBarThickness: 24
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                title: items => top8[items[0].dataIndex].nama,
+                                label: ctx => {
+                                    const item = top8[ctx.dataIndex];
+                                    return ` ${formatRupiah(item.nilai)} (${item.terjual} unit)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                font: { size: 11 },
+                                callback: val => val >= 1000000 ? 'Rp ' + (val / 1000000) + ' jt' : formatRupiah(val)
+                            }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11 }, color: '#334155' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function openProductModal(product) {
+            document.getElementById('modal-no-jenis').textContent = `Produk #${product.no} · ${product.jenis}`;
+            document.getElementById('modal-title').textContent = product.nama;
+            document.getElementById('modal-kat').textContent = product.kat;
+            document.getElementById('modal-asal').textContent = product.asal;
+            document.getElementById('modal-tkdn').textContent = product.tkdn;
+            document.getElementById('modal-stok').textContent = product.stok;
+            document.getElementById('modal-harga').textContent = formatRupiah(product.harga);
+            document.getElementById('modal-terjual').textContent = `${formatNumber(product.terjual)} unit`;
+            document.getElementById('modal-nilai').textContent = formatRupiah(product.nilai);
+            document.getElementById('modal-link').href = product.link;
+
+            const modal = document.getElementById('product-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeProductModal() {
+            const modal = document.getElementById('product-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderTable() {
+            const filtered = getFilteredData();
+            updateSummary(filtered);
+
+            const tbody = document.getElementById('table-body');
+            const emptyState = document.getElementById('empty-state');
+            const footer = document.getElementById('pagination-footer');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                footer.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            footer.classList.remove('hidden');
+
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / state.rowsPerPage);
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+
+            const startIdx = (state.currentPage - 1) * state.rowsPerPage;
+            const endIdx = Math.min(startIdx + state.rowsPerPage, totalItems);
+            const rows = filtered.slice(startIdx, endIdx);
+
+            tbody.innerHTML = rows.map(item => {
+                const stokStyle = item.stok === 'Stok Habis'
+                    ? 'text-rose-700 bg-rose-50 border border-rose-200'
+                    : 'text-slate-600 bg-slate-100';
+
+                const tkdnNote = item.tkdn && item.tkdn !== '-'
+                    ? `<span class="block text-[11px] text-blue-700 mt-0.5">${item.tkdn}</span>`
+                    : '';
+
+                return `
+                    <tr data-no="${item.no}" class="hover:bg-[#f8fafc] transition-colors cursor-pointer">
+                        <td class="py-3 px-4 text-xs text-slate-500 tabular-nums">${item.no}</td>
+                        <td class="py-3 px-4 font-medium text-slate-900">
+                            ${item.nama}
+                            ${tkdnNote}
+                        </td>
+                        <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${item.kat}</td>
+                        <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${item.asal}</td>
+                        <td class="py-3 px-4 text-right text-slate-700 tabular-nums whitespace-nowrap">${formatRupiah(item.harga)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums whitespace-nowrap ${item.terjual > 0 ? 'font-medium text-slate-900' : 'text-slate-400'}">${formatNumber(item.terjual)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums whitespace-nowrap ${item.nilai > 0 ? 'font-medium text-slate-900' : 'text-slate-400'}">${formatRupiah(item.nilai)}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                            <span class="inline-block px-2 py-0.5 rounded-md text-xs font-medium ${stokStyle}">${item.stok}</span>
+                        </td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap" onclick="event.stopPropagation()">
+                            <button type="button" data-detail-no="${item.no}"
+                                    class="text-xs font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded border border-[#e2e8f0] hover:bg-slate-100 mr-1.5 cursor-pointer">
+                                Detail
+                            </button>
+                            <a href="${item.link}" target="_blank" rel="noopener noreferrer"
+                               class="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                                INAPROC
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('page-start').textContent = startIdx + 1;
+            document.getElementById('page-end').textContent = endIdx;
+            document.getElementById('page-total').textContent = totalItems;
+
+            renderPagination(totalPages);
+            updateSortIndicators();
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById('pagination-controls');
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `<button type="button" data-page="${state.currentPage - 1}" ${state.currentPage === 1 ? 'disabled' : ''}
+                class="px-2.5 py-1 rounded border border-[#e2e8f0] bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none cursor-pointer">Prev</button>`;
+
+            for (let p = 1; p <= totalPages; p++) {
+                const active = p === state.currentPage
+                    ? 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-white text-slate-700 border-[#e2e8f0] hover:bg-slate-100';
+                html += `<button type="button" data-page="${p}" class="px-2.5 py-1 rounded border cursor-pointer ${active}">${p}</button>`;
+            }
+
+            html += `<button type="button" data-page="${state.currentPage + 1}" ${state.currentPage === totalPages ? 'disabled' : ''}
+                class="px-2.5 py-1 rounded border border-[#e2e8f0] bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none cursor-pointer">Next</button>`;
+
+            container.innerHTML = html;
+        }
+
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(el => {
+                const col = el.getAttribute('data-col');
+                if (col === state.sortBy) {
+                    el.innerHTML = state.sortDir === 'asc' ? '&#8593;' : '&#8595;';
+                    el.className = 'sort-indicator text-slate-900 font-semibold';
+                } else {
+                    el.innerHTML = '&#8597;';
+                    el.className = 'sort-indicator text-slate-400';
+                }
+            });
+        }
+
+        function exportCSV() {
+            const data = getFilteredData();
+            if (!data.length) {
+                showToast('Tidak ada data untuk diunduh.');
+                return;
+            }
+
+            const headers = ['No', 'Nama Produk', 'Kategori', 'Jenis', 'Asal', 'TKDN', 'Harga Satuan', 'Unit Terjual', 'Perkiraan Nilai Terjual', 'Status Stok', 'Link INAPROC'];
+            const lines = data.map(item => [
+                item.no,
+                `"${item.nama.replace(/"/g, '""')}"`,
+                item.kat,
+                item.jenis,
+                item.asal,
+                `"${item.tkdn}"`,
+                item.harga,
+                item.terjual,
+                item.nilai,
+                item.stok,
+                item.link
+            ].join(','));
+
+            const csv = '\uFEFF' + [headers.join(','), ...lines].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `semestadata_katalog_${data.length}_produk.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`Mengunduh ${data.length} data produk (CSV).`);
+        }
+
+        function resetFilters() {
+            state.search = '';
+            state.kategori = 'ALL';
+            state.asal = 'ALL';
+            state.stok = 'ALL';
+            state.sortBy = 'no';
+            state.sortDir = 'asc';
+            state.currentPage = 1;
+
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-kategori').value = 'ALL';
+            document.getElementById('filter-asal').value = 'ALL';
+            document.getElementById('filter-stok').value = 'ALL';
+            renderTable();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            renderTable();
+
+            document.getElementById('search-input').addEventListener('input', e => {
+                state.search = e.target.value;
+                state.currentPage = 1;
+                renderTable();
+            });
+
+            document.getElementById('filter-kategori').addEventListener('change', e => {
+                state.kategori = e.target.value;
+                state.currentPage = 1;
+                renderTable();
+            });
+
+            document.getElementById('filter-asal').addEventListener('change', e => {
+                state.asal = e.target.value;
+                state.currentPage = 1;
+                renderTable();
+            });
+
+            document.getElementById('filter-stok').addEventListener('change', e => {
+                state.stok = e.target.value;
+                state.currentPage = 1;
+                renderTable();
+            });
+
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const col = th.getAttribute('data-sort');
+                    if (state.sortBy === col) {
+                        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        state.sortBy = col;
+                        state.sortDir = (col === 'no' || col === 'nama') ? 'asc' : 'desc';
+                    }
+                    renderTable();
+                });
+            });
+
+            // Klik baris atau tombol Detail untuk membuka modal produk
+            document.getElementById('table-body').addEventListener('click', e => {
+                const detailBtn = e.target.closest('button[data-detail-no]');
+                const row = e.target.closest('tr[data-no]');
+                const noAttr = detailBtn ? detailBtn.getAttribute('data-detail-no') : (row ? row.getAttribute('data-no') : null);
+                if (noAttr) {
+                    const found = PRODUCTS_DATA.find(p => String(p.no) === String(noAttr));
+                    if (found) openProductModal(found);
+                }
+            });
+
+            document.getElementById('btn-close-modal').addEventListener('click', closeProductModal);
+            document.getElementById('btn-modal-tutup').addEventListener('click', closeProductModal);
+            document.getElementById('product-modal').addEventListener('click', e => {
+                if (e.target.id === 'product-modal') closeProductModal();
+            });
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') closeProductModal();
+            });
+
+            document.getElementById('pagination-controls').addEventListener('click', e => {
+                const btn = e.target.closest('button[data-page]');
+                if (btn && !btn.disabled) {
+                    state.currentPage = parseInt(btn.getAttribute('data-page'), 10);
+                    renderTable();
+                }
+            });
+
+            document.getElementById('btn-reset-filter').addEventListener('click', resetFilters);
+            document.getElementById('btn-empty-reset').addEventListener('click', resetFilters);
+            document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+        });
+    </script>
+</body>
+</html>
